@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-white text-zinc-900;
+  }
+}
+
+.prose h2 {
+  @apply font-black uppercase tracking-tight text-zinc-900 mt-12 mb-6;
+}
+
+.prose p {
+  @apply text-zinc-600 leading-relaxed mb-6;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-red-600 pl-6 italic text-xl text-zinc-800 my-10;
+}
+
+.prose img {
+  @apply rounded-2xl shadow-lg my-12;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}

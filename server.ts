@@ -65,36 +65,62 @@ async function startServer() {
 
   // Helper function to get all articles
   function getAllArticles() {
-    const articlesDir = path.join(process.cwd(), "articles");
-    const categories = ["grand", "urgent", "a_la_une", "politique", "economie", "culture", "sport", "sante"];
+    // Use both process.cwd() and __dirname as fallbacks for Vercel
+    const rootDir = process.env.VERCEL ? process.cwd() : path.resolve(__dirname);
+    const articlesDir = path.join(rootDir, "articles");
+    const categories = ["grand", "urgent", "a_la_une", "politique", "economie", "culture", "sport", "sante", "afrique", "international"];
     let allArticles: any[] = [];
 
+    if (!fs.existsSync(articlesDir)) {
+      console.warn("Articles directory not found at:", articlesDir);
+      // Try alternative path for Vercel serverless environment
+      const altPath = path.join(process.cwd(), "articles");
+      if (altPath !== articlesDir && fs.existsSync(altPath)) {
+        return getArticlesFromDir(altPath, categories);
+      }
+      return [];
+    }
+
+    return getArticlesFromDir(articlesDir, categories);
+  }
+
+  function getArticlesFromDir(articlesDir: string, categories: string[]) {
+    let allArticles: any[] = [];
     categories.forEach((cat) => {
       const catDir = path.join(articlesDir, cat);
       if (fs.existsSync(catDir)) {
-        const files = fs.readdirSync(catDir);
-        files.forEach((file) => {
-          if (file.endsWith(".md")) {
-            const filePath = path.join(catDir, file);
-            const content = fs.readFileSync(filePath, "utf-8");
-            const { data } = matter(content);
-            allArticles.push({
-              ...data,
-              slug: file.replace(".md", ""),
-              category: cat,
-            });
-          }
-        });
+        try {
+          const files = fs.readdirSync(catDir);
+          files.forEach((file) => {
+            if (file.endsWith(".md")) {
+              const filePath = path.join(catDir, file);
+              const content = fs.readFileSync(filePath, "utf-8");
+              const { data } = matter(content);
+              allArticles.push({
+                ...data,
+                slug: file.replace(".md", ""),
+                category: cat,
+              });
+            }
+          });
+        } catch (err) {
+          console.error(`Error reading category ${cat}:`, err);
+        }
       }
     });
-
     return allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   // API to get a single article
   app.get("/api/articles/:category/:slug", (req, res) => {
     const { category, slug } = req.params;
-    const filePath = path.join(process.cwd(), "articles", category, `${slug}.md`);
+    const rootDir = process.env.VERCEL ? process.cwd() : path.resolve(__dirname);
+    let filePath = path.join(rootDir, "articles", category, `${slug}.md`);
+
+    if (!fs.existsSync(filePath)) {
+      // Fallback for Vercel
+      filePath = path.join(process.cwd(), "articles", category, `${slug}.md`);
+    }
 
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, "utf-8");

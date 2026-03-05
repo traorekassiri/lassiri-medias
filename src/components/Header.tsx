@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, Facebook, Instagram, MessageCircle } from 'lucide-react';
+import { Menu, X, Search, Facebook, Instagram, MessageCircle, ChevronDown } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +12,7 @@ function cn(...inputs: ClassValue[]) {
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrollProgress, setScrollProgress] = useState(0);
   const location = useLocation();
@@ -65,7 +66,17 @@ export default function Header() {
   useEffect(() => {
     setIsMenuOpen(false);
     setIsSearchOpen(false);
+    setIsCategoriesOpen(false);
   }, [location.pathname]);
+
+  // Close categories dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setIsCategoriesOpen(false);
+    if (isCategoriesOpen) {
+      window.addEventListener('click', handleClickOutside);
+    }
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [isCategoriesOpen]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +87,7 @@ export default function Header() {
     }
   };
 
-  const navLinks = [
-    { name: 'Accueil', path: '/' },
+  const categories = [
     { name: 'Afrique', path: '/category/afrique' },
     { name: 'International', path: '/category/international' },
     { name: 'Politique', path: '/category/politique' },
@@ -85,6 +95,11 @@ export default function Header() {
     { name: 'Culture', path: '/category/culture' },
     { name: 'Sport', path: '/category/sport' },
     { name: 'Santé', path: '/category/sante' },
+  ];
+
+  const navLinks = [
+    { name: 'Accueil', path: '/' },
+    ...categories.slice(0, 2), // Show first two directly
   ];
 
   const socialLinks = [
@@ -123,7 +138,7 @@ export default function Header() {
                 key={link.name}
                 to={link.path}
                 className={cn(
-                  "relative text-sm font-bold uppercase tracking-wider transition-colors hover:text-red-600 h-full flex items-center group/link",
+                  "relative text-sm font-bold uppercase tracking-wider transition-colors hover:text-red-600 h-full flex items-center",
                   location.pathname === link.path ? "text-red-600" : "text-zinc-600"
                 )}
               >
@@ -136,6 +151,47 @@ export default function Header() {
                 )}
               </Link>
             ))}
+
+            {/* Categories Dropdown */}
+            <div className="relative h-full flex items-center">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCategoriesOpen(!isCategoriesOpen);
+                }}
+                className={cn(
+                  "flex items-center space-x-1 text-sm font-bold uppercase tracking-wider transition-colors hover:text-red-600",
+                  isCategoriesOpen || location.pathname.startsWith('/category/') ? "text-red-600" : "text-zinc-600"
+                )}
+              >
+                <span>Catégories</span>
+                <ChevronDown size={14} className={cn("transition-transform", isCategoriesOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isCategoriesOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 w-48 bg-white border border-zinc-200 shadow-xl rounded-b-xl py-2 z-50"
+                  >
+                    {categories.map((cat) => (
+                      <Link
+                        key={cat.name}
+                        to={cat.path}
+                        className={cn(
+                          "block px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-zinc-50 transition-colors",
+                          location.pathname === cat.path ? "text-red-600 bg-red-50" : "text-zinc-600"
+                        )}
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
 
           {/* Actions */}
@@ -180,44 +236,52 @@ export default function Header() {
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div
-            key="mobile-menu-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMenuOpen(false)}
-            className="fixed inset-0 top-20 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            key="mobile-menu-content"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-20 right-0 bottom-0 w-full max-w-xs bg-white z-50 lg:hidden border-l border-zinc-200 shadow-2xl overflow-y-auto"
-          >
-            <div className="p-6 space-y-8">
-              <nav className="space-y-2">
-                {navLinks.map((link) => (
+          <div className="lg:hidden">
+            <motion.div
+              key="mobile-menu-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 top-20 bg-black/50 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              key="mobile-menu-content"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-20 right-0 bottom-0 w-full max-w-xs bg-white z-50 border-l border-zinc-200 shadow-2xl overflow-y-auto"
+            >
+              <div className="p-6 space-y-8">
+                <nav className="space-y-2">
                   <Link
-                    key={link.name}
-                    to={link.path}
+                    to="/"
                     className={cn(
                       "block px-4 py-4 text-lg font-black uppercase tracking-tighter rounded-xl transition-all",
-                      location.pathname === link.path 
-                        ? "bg-red-50 text-red-600" 
-                        : "text-zinc-900 hover:bg-zinc-50"
+                      location.pathname === "/" ? "bg-red-50 text-red-600" : "text-zinc-900 hover:bg-zinc-50"
                     )}
                   >
-                    {link.name}
+                    Accueil
                   </Link>
-                ))}
-              </nav>
+                  <div className="pt-4 pb-2 px-4">
+                    <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Catégories</p>
+                  </div>
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.name}
+                      to={cat.path}
+                      className={cn(
+                        "block px-4 py-4 text-lg font-black uppercase tracking-tighter rounded-xl transition-all",
+                        location.pathname === cat.path 
+                          ? "bg-red-50 text-red-600" 
+                          : "text-zinc-900 hover:bg-zinc-50"
+                      )}
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </nav>
 
               <div className="pt-8 border-t border-zinc-100">
                 <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-6 px-4">Suivez-nous</p>
@@ -252,8 +316,9 @@ export default function Header() {
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+    </AnimatePresence>
 
       {/* Search Overlay */}
       <AnimatePresence>

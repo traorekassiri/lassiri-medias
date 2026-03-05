@@ -80,6 +80,7 @@ export default function Header() {
     { name: 'Accueil', path: '/' },
     { name: 'Afrique', path: '/category/afrique' },
     { name: 'International', path: '/category/international' },
+    { name: 'Politique', path: '/category/politique' },
     { name: 'Économie', path: '/category/economie' },
     { name: 'Culture', path: '/category/culture' },
     { name: 'Sport', path: '/category/sport' },

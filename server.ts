@@ -68,7 +68,18 @@ async function startServer() {
     // Use both process.cwd() and __dirname as fallbacks for Vercel
     const rootDir = process.env.VERCEL ? process.cwd() : path.resolve(__dirname);
     const articlesDir = path.join(rootDir, "articles");
-    const categories = ["grand", "urgent", "a_la_une", "politique", "economie", "culture", "sport", "sante", "afrique", "international"];
+    const categories = [
+      "a_la_une", 
+      "culture", 
+      "economie", 
+      "international", 
+      "politique", 
+      "sante", 
+      "sport", 
+      "urgent",
+      "afrique",
+      "grand"
+    ];
     let allArticles: any[] = [];
 
     if (!fs.existsSync(articlesDir)) {

@@ -61,6 +61,12 @@ export default function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Close menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setIsSearchOpen(false);
+  }, [location.pathname]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -173,117 +179,126 @@ export default function Header() {
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 top-20 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-20 right-0 bottom-0 w-full max-w-xs bg-white z-50 lg:hidden border-l border-zinc-200 shadow-2xl overflow-y-auto"
-            >
-              <div className="p-6 space-y-8">
-                <nav className="space-y-2">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={cn(
-                        "block px-4 py-4 text-lg font-black uppercase tracking-tighter rounded-xl transition-all",
-                        location.pathname === link.path 
-                          ? "bg-red-50 text-red-600" 
-                          : "text-zinc-900 hover:bg-zinc-50"
-                      )}
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
-                </nav>
+          <motion.div
+            key="mobile-menu-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMenuOpen(false)}
+            className="fixed inset-0 top-20 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
 
-                <div className="pt-8 border-t border-zinc-100">
-                  <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-6 px-4">Suivez-nous</p>
-                  <div className="flex space-x-4 px-4">
-                    {socialLinks.map((social, idx) => (
-                      <a
-                        key={idx}
-                        href={social.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-12 h-12 flex items-center justify-center bg-zinc-100 rounded-full text-zinc-600 hover:bg-red-600 hover:text-white transition-all"
-                      >
-                        {social.icon}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            key="mobile-menu-content"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed top-20 right-0 bottom-0 w-full max-w-xs bg-white z-50 lg:hidden border-l border-zinc-200 shadow-2xl overflow-y-auto"
+          >
+            <div className="p-6 space-y-8">
+              <nav className="space-y-2">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    className={cn(
+                      "block px-4 py-4 text-lg font-black uppercase tracking-tighter rounded-xl transition-all",
+                      location.pathname === link.path 
+                        ? "bg-red-50 text-red-600" 
+                        : "text-zinc-900 hover:bg-zinc-50"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
 
-                <div className="pt-8 px-4">
-                  <div className="bg-zinc-900 p-6 rounded-2xl text-white">
-                    <h4 className="font-black uppercase tracking-tighter mb-2">Soutenez-nous</h4>
-                    <p className="text-xs text-zinc-400 mb-4">Aidez Kassiri Pulse à rester indépendant.</p>
-                    <a 
-                      href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=traorekassiri@gmail.com&currency_code=EUR&source=url"
+              <div className="pt-8 border-t border-zinc-100">
+                <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-6 px-4">Suivez-nous</p>
+                <div className="flex space-x-4 px-4">
+                  {socialLinks.map((social, idx) => (
+                    <a
+                      key={idx}
+                      href={social.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full bg-red-600 text-white text-center py-3 rounded-xl font-bold text-sm hover:bg-red-700 transition-colors"
+                      className="w-12 h-12 flex items-center justify-center bg-zinc-100 rounded-full text-zinc-600 hover:bg-red-600 hover:text-white transition-all"
                     >
-                      Faire un don
+                      {social.icon}
                     </a>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </motion.div>
-          </>
+
+              <div className="pt-8 px-4">
+                <div className="bg-zinc-900 p-6 rounded-2xl text-white">
+                  <h4 className="font-black uppercase tracking-tighter mb-2">Soutenez-nous</h4>
+                  <p className="text-xs text-zinc-400 mb-4">Aidez Kassiri Pulse à rester indépendant.</p>
+                  <a 
+                    href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=traorekassiri@gmail.com&currency_code=EUR&source=url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full bg-red-600 text-white text-center py-3 rounded-xl font-bold text-sm hover:bg-red-700 transition-colors"
+                  >
+                    Faire un don
+                  </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Search Overlay */}
       <AnimatePresence>
         {isSearchOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSearchOpen(false)}
-              className="fixed inset-0 top-20 bg-black/20 backdrop-blur-sm z-30"
-            />
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-20 left-0 right-0 bg-white border-b border-zinc-200 p-4 z-40 shadow-xl"
-            >
-              <div className="max-w-3xl mx-auto flex items-center gap-4">
-                <form onSubmit={handleSearch} className="relative flex-1">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un article..."
-                    className="w-full bg-zinc-100 border-none rounded-full py-3 sm:py-4 px-6 sm:px-8 text-zinc-900 outline-none focus:ring-2 focus:ring-red-600 transition-all"
-                    autoFocus
-                  />
-                  <button type="submit" className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600 transition-colors">
-                    <Search size={22} />
-                  </button>
-                </form>
-                <button 
-                  onClick={() => setIsSearchOpen(false)}
-                  className="p-2 text-zinc-400 hover:text-red-600 transition-colors lg:hidden"
-                >
-                  <X size={24} />
+          <motion.div
+            key="search-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSearchOpen(false)}
+            className="fixed inset-0 top-20 bg-black/20 backdrop-blur-sm z-30"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div 
+            key="search-bar"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-20 left-0 right-0 bg-white border-b border-zinc-200 p-4 z-40 shadow-xl"
+          >
+            <div className="max-w-3xl mx-auto flex items-center gap-4">
+              <form onSubmit={handleSearch} className="relative flex-1">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher un article..."
+                  className="w-full bg-zinc-100 border-none rounded-full py-3 sm:py-4 px-6 sm:px-8 text-zinc-900 outline-none focus:ring-2 focus:ring-red-600 transition-all"
+                  autoFocus
+                />
+                <button type="submit" className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600 transition-colors">
+                  <Search size={22} />
                 </button>
-              </div>
-            </motion.div>
-          </>
+              </form>
+              <button 
+                onClick={() => setIsSearchOpen(false)}
+                className="p-2 text-zinc-400 hover:text-red-600 transition-colors lg:hidden"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>

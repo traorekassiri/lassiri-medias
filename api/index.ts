@@ -14,8 +14,40 @@ async function startServer() {
 
   // API to get all articles
   app.get("/api/articles", (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const articles = getAllArticles();
     res.json(articles);
+  });
+
+  // Debug API to see file system state
+  app.get("/api/debug-files", (req, res) => {
+    const rootDir = process.cwd();
+    const articlesDir = path.join(rootDir, "articles");
+    const exists = fs.existsSync(articlesDir);
+    let files: string[] = [];
+    
+    if (exists) {
+      try {
+        const categories = fs.readdirSync(articlesDir);
+        categories.forEach(cat => {
+          const catPath = path.join(articlesDir, cat);
+          if (fs.lstatSync(catPath).isDirectory()) {
+            const catFiles = fs.readdirSync(catPath);
+            catFiles.forEach(f => files.push(`${cat}/${f}`));
+          }
+        });
+      } catch (e: any) {
+        files.push(`Error: ${e.message}`);
+      }
+    }
+
+    res.json({
+      cwd: rootDir,
+      dirname: __dirname,
+      articlesDir,
+      exists,
+      files
+    });
   });
 
   // Sitemap Route
@@ -65,9 +97,6 @@ async function startServer() {
 
   // Helper function to get all articles
   function getAllArticles() {
-    // Use both process.cwd() and __dirname as fallbacks for Vercel
-    const rootDir = process.env.VERCEL ? process.cwd() : path.resolve(__dirname);
-    const articlesDir = path.join(rootDir, "articles");
     const categories = [
       "a_la_une", 
       "culture", 
@@ -80,22 +109,32 @@ async function startServer() {
       "afrique",
       "grand"
     ];
-    let allArticles: any[] = [];
 
-    if (!fs.existsSync(articlesDir)) {
-      console.warn("Articles directory not found at:", articlesDir);
-      // Try alternative path for Vercel serverless environment
-      const altPath = path.join(process.cwd(), "articles");
-      if (altPath !== articlesDir && fs.existsSync(altPath)) {
-        return getArticlesFromDir(altPath, categories);
+    const possiblePaths = [
+      path.join(process.cwd(), "articles"),
+      path.join(__dirname, "articles"),
+      path.join(__dirname, "..", "articles"),
+      path.resolve("articles")
+    ];
+
+    let articlesDir = "";
+    for (const p of possiblePaths) {
+      try {
+        if (fs.existsSync(p) && fs.lstatSync(p).isDirectory()) {
+          articlesDir = p;
+          console.log(`Found articles directory at: ${p}`);
+          break;
+        }
+      } catch (e) {
+        // Ignore errors during path checking
       }
+    }
+
+    if (!articlesDir) {
+      console.error("Articles directory not found in any of the possible locations:", possiblePaths);
       return [];
     }
 
-    return getArticlesFromDir(articlesDir, categories);
-  }
-
-  function getArticlesFromDir(articlesDir: string, categories: string[]) {
     let allArticles: any[] = [];
     categories.forEach((cat) => {
       const catDir = path.join(articlesDir, cat);
@@ -107,11 +146,13 @@ async function startServer() {
               const filePath = path.join(catDir, file);
               const content = fs.readFileSync(filePath, "utf-8");
               const { data } = matter(content);
-              allArticles.push({
-                ...data,
-                slug: file.replace(".md", ""),
-                category: cat,
-              });
+              if (data && data.title) {
+                allArticles.push({
+                  ...data,
+                  slug: file.replace(".md", ""),
+                  category: cat,
+                });
+              }
             }
           });
         } catch (err) {
@@ -119,24 +160,41 @@ async function startServer() {
         }
       }
     });
-    return allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return allArticles.sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
   }
 
   // API to get a single article
   app.get("/api/articles/:category/:slug", (req, res) => {
     const { category, slug } = req.params;
-    const rootDir = process.env.VERCEL ? process.cwd() : path.resolve(__dirname);
-    let filePath = path.join(rootDir, "articles", category, `${slug}.md`);
+    
+    const possiblePaths = [
+      path.join(process.cwd(), "articles", category, `${slug}.md`),
+      path.join(__dirname, "articles", category, `${slug}.md`),
+      path.join(__dirname, "..", "articles", category, `${slug}.md`),
+      path.resolve("articles", category, `${slug}.md`)
+    ];
 
-    if (!fs.existsSync(filePath)) {
-      // Fallback for Vercel
-      filePath = path.join(process.cwd(), "articles", category, `${slug}.md`);
+    let filePath = "";
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        filePath = p;
+        break;
+      }
     }
 
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, "utf-8");
-      const { data, content: body } = matter(content);
-      res.json({ ...data, body, category, slug });
+    if (filePath) {
+      try {
+        const content = fs.readFileSync(filePath, "utf-8");
+        const { data, content: body } = matter(content);
+        res.json({ ...data, body, category, slug });
+      } catch (err) {
+        res.status(500).json({ error: "Error reading article file" });
+      }
     } else {
       res.status(404).json({ error: "Article not found" });
     }
@@ -152,7 +210,7 @@ async function startServer() {
   } else {
     app.use(express.static("dist"));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
+      res.sendFile(path.join(process.cwd(), "dist", "index.html"));
     });
   }
 
